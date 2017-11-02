@@ -10,6 +10,7 @@ import sklearn.manifold
 from sklearn.metrics import confusion_matrix, accuracy_score
 import sklearn.svm
 import tensorflow as tf
+import numpy as np
 
 
 def timestamp(format='%Y_%m_%d_%H_%M_%S'):
@@ -23,6 +24,9 @@ def plot_dictionary(dictionary, shape, num_shown=20, row_length=10):
     for i, image in enumerate(dictionary[:num_shown]):
         plt.subplot(rows, row_length, i + 1)
         plt.axis('off')
+        if (len(shape)>2):
+            image = (image-np.min(image))/(np.max(image)-np.min(image))
+            #image = np.clip(image,0,1)
         plt.imshow(image.reshape(shape), cmap=plt.cm.gray)
     plt.show()
 
@@ -32,10 +36,14 @@ def plot_reconstruction(truth, reconstructed, shape, num_shown=10):
     for i, image in enumerate(truth[:num_shown]):
         plt.subplot(2, num_shown, i + 1)
         plt.axis('off')
+        image = np.clip(image,0,1)
         plt.imshow(image.reshape(shape), cmap=plt.cm.gray)
     for i, image in enumerate(reconstructed[:num_shown]):
         plt.subplot(2, num_shown, i + num_shown + 1)
         plt.axis('off')
+        if (len(shape)>2):
+            image = (image-np.min(image))/(np.max(image)-np.min(image))
+            #image = np.clip(image,0,1)
         plt.imshow(image.reshape(shape), cmap=plt.cm.gray)
     plt.show()
 
