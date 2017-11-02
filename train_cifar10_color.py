@@ -34,11 +34,11 @@ tf.app.flags.DEFINE_float('sparsity', float(sys.argv[1]),
                           'lifetime sparsity constraint to enforce')
 tf.app.flags.DEFINE_integer('batch_size', 100,
                             'batch size to use during training')
-tf.app.flags.DEFINE_integer('hidden_units', 1800,
+tf.app.flags.DEFINE_integer('hidden_units', 3074,
                             'size of each ReLU (encode) layer')
 tf.app.flags.DEFINE_integer('num_layers', 1,
                             'number of ReLU (encode) layers')
-tf.app.flags.DEFINE_integer('train_steps', 0,
+tf.app.flags.DEFINE_integer('train_steps', 800000,
                             'total minibatches to train')
 tf.app.flags.DEFINE_integer('steps_per_display', 100,
                             'minibatches to train before printing loss')
@@ -78,6 +78,8 @@ def next_batch(num, data):
 
 def main():
     (X_train, y_train), (X_test, y_test) = load_data()
+    X_train = X_train/np.max(X_train)
+    X_test = X_test/np.max(X_train)
 
     # With fully connected network, it will be too ambitious to use 32*32 color image.
     # Reduce dimension by doing grayscale.
