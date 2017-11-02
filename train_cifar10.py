@@ -31,11 +31,11 @@ tf.app.flags.DEFINE_float('sparsity', 0.05,
                           'lifetime sparsity constraint to enforce')
 tf.app.flags.DEFINE_integer('batch_size', 100,
                             'batch size to use during training')
-tf.app.flags.DEFINE_integer('hidden_units', 2000,
+tf.app.flags.DEFINE_integer('hidden_units', 3000,
                             'size of each ReLU (encode) layer')
 tf.app.flags.DEFINE_integer('num_layers', 1,
                             'number of ReLU (encode) layers')
-tf.app.flags.DEFINE_integer('train_steps', 1,
+tf.app.flags.DEFINE_integer('train_steps', 300000,
                             'total minibatches to train')
 tf.app.flags.DEFINE_integer('steps_per_display', 100,
                             'minibatches to train before printing loss')
@@ -49,7 +49,7 @@ tf.app.flags.DEFINE_boolean('use_seed', True,
                             'fix random seed to guarantee reproducibility')
 tf.app.flags.DEFINE_boolean('write_logs', False,
                             'write log files')
-tf.app.flags.DEFINE_boolean('show_plots', True,
+tf.app.flags.DEFINE_boolean('show_plots', False,
                             'show visualizations')
 tf.app.flags.DEFINE_integer('each_dim', 32,
                             'number of pixels in each dimension')
