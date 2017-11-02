@@ -1,10 +1,7 @@
 """
-Trains a FC-WTA autoencoder on the MNIST digits dataset. Also plots
+Trains a FC-WTA autoencoder on the cifar-10 dataset. Also plots
 some visualizations (see --show_plots) and evaluates the learned
 featurization by training an SVM on the encoded data.
-
-The default settings should give roughly 98.6% classification accuracy,
-close to the 98.80% accuracy reported in the original WTA paper.
 
 Because sklearn.svm.LinearSVC is non-deterministic, the results may vary
 from run to run.
@@ -15,7 +12,6 @@ import time
 
 import numpy as np
 import tensorflow as tf
-#from tensorflow.examples.tutorials.mnist import input_data
 from tensorflow.contrib.keras.python.keras.datasets.cifar10 import load_data
 
 from models import FullyConnectedWTA
@@ -55,8 +51,6 @@ tf.app.flags.DEFINE_boolean('write_logs', False,
                             'write log files')
 tf.app.flags.DEFINE_boolean('show_plots', True,
                             'show visualizations')
-tf.app.flags.DEFINE_integer('flat_dim', 1024,
-                            'number of pixels in each data')
 tf.app.flags.DEFINE_integer('each_dim', 32,
                             'number of pixels in each dimension')
 
@@ -77,17 +71,18 @@ def next_batch(num, data):
     return np.asarray(data_shuffle)
 
 def main():
-    #mnist = input_data.read_data_sets(FLAGS.data_dir, validation_size=0)
-    #X_train = mnist.train.images[:FLAGS.train_size]
-    #y_train = mnist.train.labels[:FLAGS.train_size]
-    #X_test = mnist.test.images[:FLAGS.test_size]
-    #y_test = mnist.test.labels[:FLAGS.test_size]
-
     (X_train, y_train), (X_test, y_test) = load_data()
+
+    # With fully connected network, it will be too ambitious to use 32*32 color image.
+    # Reduce dimension by doing grayscale.
     X_train = rgb2gray(X_train)
     X_test = rgb2gray(X_test)
+
+    # Flatten arrays
     X_train = X_train.reshape(X_train.shape[0],FLAGS.each_dim**2)
     X_test = X_test.reshape(X_test.shape[0],FLAGS.each_dim**2)
+    y_train = y_train.reshape(y_train.shape[0])
+    y_test = y_test.reshape(y_test.shape[0])
 
     fcwta = FullyConnectedWTA(FLAGS.each_dim**2,
                               FLAGS.batch_size,
@@ -154,6 +149,7 @@ def main():
             plot_tsne(X_train_f[:1000], y_train[:1000])
 
         # Evaluate classification accuracy
+        # JP 2017/11/01: This part of code is actually not tested with new data...
         for C in np.logspace(-3, 2, 6):
             acc, _ = svm_acc(X_train_f, y_train, X_test_f, y_test, C)
             print('C={:.3f}, acc={:.4f}'.format(C, acc))
