@@ -42,7 +42,7 @@ tf.app.flags.DEFINE_integer('train_steps', 800000,
                             'total minibatches to train')
 tf.app.flags.DEFINE_integer('steps_per_display', 100,
                             'minibatches to train before printing loss')
-tf.app.flags.DEFINE_integer('steps_per_checkpoint', 10000,
+tf.app.flags.DEFINE_integer('steps_per_checkpoint', 5000,
                             'minibatches to train before saving checkpoint')
 tf.app.flags.DEFINE_integer('train_size', 50000,
                             'number of examples to use to train classifier')
