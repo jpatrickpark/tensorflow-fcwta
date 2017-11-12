@@ -46,7 +46,7 @@ tf.app.flags.DEFINE_integer('hidden_units', 2000,
                             'size of each ReLU (encode) layer')
 tf.app.flags.DEFINE_integer('num_layers', 1,
                             'number of ReLU (encode) layers')
-tf.app.flags.DEFINE_integer('train_steps', 50000,
+tf.app.flags.DEFINE_integer('train_steps', 500000,
                             'total minibatches to train')
 tf.app.flags.DEFINE_integer('steps_per_display', 100,
                             'minibatches to train before printing loss')
