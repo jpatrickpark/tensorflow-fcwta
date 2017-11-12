@@ -18,9 +18,6 @@ from tensorflow.contrib.keras.python.keras.datasets.cifar10 import load_data
 from models import FullyConnectedWTA
 from util import plot_dictionary, plot_reconstruction, plot_tsne, svm_acc, timestamp, value_to_summary
 
-from scipy.cluster.vq import whiten
-import pickle
-
 default_dir_suffix = timestamp()
 try:
     with open("whichdir.txt", "a") as myfile:
@@ -30,7 +27,7 @@ except:
     print("Exiting ...")
     sys.exit()
 
-tf.app.flags.DEFINE_string('data_dir', 'CIFAR10_whiten_28_grayscale_data/',
+tf.app.flags.DEFINE_string('data_dir', 'CIFAR10_color_24_data/',
                            'where to load data from (or download data to)')
 tf.app.flags.DEFINE_string('train_dir', 'train_%s' % default_dir_suffix,
                            'where to store checkpoints to (or load checkpoints from)')
@@ -42,15 +39,15 @@ tf.app.flags.DEFINE_float('sparsity', float(sys.argv[1]),
                           'lifetime sparsity constraint to enforce')
 tf.app.flags.DEFINE_integer('batch_size', 100,
                             'batch size to use during training')
-tf.app.flags.DEFINE_integer('hidden_units', 2000,
+tf.app.flags.DEFINE_integer('hidden_units', 3074,
                             'size of each ReLU (encode) layer')
 tf.app.flags.DEFINE_integer('num_layers', 1,
                             'number of ReLU (encode) layers')
-tf.app.flags.DEFINE_integer('train_steps', 50000,
+tf.app.flags.DEFINE_integer('train_steps', 80000,
                             'total minibatches to train')
 tf.app.flags.DEFINE_integer('steps_per_display', 100,
                             'minibatches to train before printing loss')
-tf.app.flags.DEFINE_integer('steps_per_checkpoint', 10000,
+tf.app.flags.DEFINE_integer('steps_per_checkpoint', 5000,
                             'minibatches to train before saving checkpoint')
 tf.app.flags.DEFINE_integer('train_size', 50000,
                             'number of examples to use to train classifier')
@@ -62,13 +59,16 @@ tf.app.flags.DEFINE_boolean('write_logs', False,
                             'write log files')
 tf.app.flags.DEFINE_boolean('show_plots', False,
                             'show visualizations')
-tf.app.flags.DEFINE_integer('each_dim', 28,
+tf.app.flags.DEFINE_integer('each_dim', 24,
                             'number of pixels in each dimension')
+tf.app.flags.DEFINE_integer('color_dim', 3,
+                            'number of color channels in image')
+
 
 FLAGS = tf.app.flags.FLAGS
 
 def rgb2gray(rgb):
-    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])/255
+    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 
 def next_batch(num, data):
     '''
@@ -82,10 +82,10 @@ def next_batch(num, data):
     return np.asarray(data_shuffle)
 
 def crop_center_oneimage(img,cropx,cropy):
-    y,x = img.shape
+    y,x,_ = img.shape
     startx = x//2-(cropx//2)
     starty = y//2-(cropy//2)
-    return img[starty:starty+cropy,startx:startx+cropx]
+    return img[starty:starty+cropy,startx:startx+cropx,:]
 
 def crop_center(img_array,trim_dim):
     result = []
@@ -94,10 +94,8 @@ def crop_center(img_array,trim_dim):
     return np.array(result)
 
 def whiten_images(train, test):
-    # Record the indices to distinguish train and test after concatenating
+    # whitening doesn't work correctly. not implemented yet.
     length_train = len(train)
-
-    # Whitening according to lecture
     whole = np.concatenate((train,test))
     mean = whole.mean(axis=0, keepdims=True)
     whole = whole - mean
@@ -105,11 +103,9 @@ def whiten_images(train, test):
     u,s,v = np.linalg.svd(whole_transpose)
     whiten_matrix = u @ np.linalg.inv(np.diag(s)) @ u.transpose()
     result = whiten_matrix @ whole_transpose
-
-    # Transpose so that I can return nice result
     result = result.transpose()
 
-    return result[:length_train], result[length_train:], mean, whiten_matrix
+    return result[:length_train], result[length_train:], mean
 
 def main():
     try:
@@ -118,8 +114,8 @@ def main():
         y_train       = np.load(open( FLAGS.data_dir+"/y_train.npy", "rb"))
         X_test        = np.load(open( FLAGS.data_dir+"/X_test.npy", "rb"))
         y_test        = np.load(open( FLAGS.data_dir+"/y_test.npy", "rb"))
-        image_mean    = np.load(open( FLAGS.data_dir+"/image_mean.npy", "rb"))
-        whiten_matrix = np.load(open( FLAGS.data_dir+"/whiten_matrix.npy", "rb"))
+        #image_mean    = np.load(open( FLAGS.data_dir+"/image_mean.npy", "rb"))
+        #whiten_matrix = np.load(open( FLAGS.data_dir+"/whiten_matrix.npy", "rb"))
         # add data checks here, and if wrong then error
         print("loading complete")
     except:
@@ -129,34 +125,37 @@ def main():
         y_train = y_train[:FLAGS.train_size]
         X_test = X_test[:FLAGS.test_size]
         y_test = y_test[:FLAGS.test_size]
+        X_train = X_train/np.max(X_train)
+        X_test = X_test/np.max(X_train)
 
         # With fully connected network, it will be too ambitious to use 32*32 color image.
         # Reduce dimension by doing grayscale.
-        X_train = rgb2gray(X_train)
-        X_test = rgb2gray(X_test)
+        #X_train = rgb2gray(X_train)
+        #X_test = rgb2gray(X_test)
 
         # Crop center in order to be able to train quickly
         X_train = crop_center(X_train,FLAGS.each_dim)
         X_test = crop_center(X_test,FLAGS.each_dim)
 
         # Flatten arrays
-        X_train = X_train.reshape(X_train.shape[0],FLAGS.each_dim**2)
-        X_test = X_test.reshape(X_test.shape[0],FLAGS.each_dim**2)
+        X_train = X_train.reshape(X_train.shape[0],FLAGS.each_dim**2*FLAGS.color_dim)
+        X_test = X_test.reshape(X_test.shape[0],FLAGS.each_dim**2*FLAGS.color_dim)
         y_train = y_train.reshape(y_train.shape[0])
         y_test = y_test.reshape(y_test.shape[0])
 
-        # Whitten images
-        X_train, X_test, image_mean, whiten_matrix = whiten_images(X_train,X_test)
+        #X_train, X_test, image_mean = whiten_images(X_train,X_test)
         if not os.path.isdir(FLAGS.data_dir):
             os.mkdir(FLAGS.data_dir)
         np.save(FLAGS.data_dir+"/X_train", X_train, True)
         np.save(FLAGS.data_dir+"/y_train", y_train, True)
         np.save(FLAGS.data_dir+"/X_test", X_test, True)
         np.save(FLAGS.data_dir+"/y_test", y_test, True)
-        np.save(FLAGS.data_dir+"/image_mean", image_mean, True)
-        np.save(FLAGS.data_dir+"/whiten_matrix", whiten_matrix, True)
+        #np.save(FLAGS.data_dir+"/image_mean", image_mean, True)
+        #np.save(FLAGS.data_dir+"/whiten_matrix", whiten_matrix, True)
 
-    fcwta = FullyConnectedWTA(FLAGS.each_dim**2,
+
+
+    fcwta = FullyConnectedWTA(FLAGS.each_dim**2*FLAGS.color_dim,
                               FLAGS.batch_size,
                               sparsity=FLAGS.sparsity,
                               hidden_units=FLAGS.hidden_units,
@@ -205,11 +204,11 @@ def main():
         if FLAGS.show_plots:
             # Examine code dictionary
             dictionary = fcwta.get_dictionary(sess)
-            plot_dictionary(dictionary, (FLAGS.each_dim, FLAGS.each_dim), num_shown=200, row_length=20)
+            plot_dictionary(dictionary, (FLAGS.each_dim, FLAGS.each_dim, FLAGS.color_dim), num_shown=200, row_length=20)
 
             # Examine reconstructions of first batch of images
             decoded, _ = fcwta.step(sess, X_train[:FLAGS.batch_size], forward_only=True)
-            plot_reconstruction(X_train[:FLAGS.batch_size], decoded, (FLAGS.each_dim, FLAGS.each_dim), 20)
+            plot_reconstruction(X_train[:FLAGS.batch_size], decoded, (FLAGS.each_dim, FLAGS.each_dim, FLAGS.color_dim), 20)
 
         # Featurize data
         X_train_f = fcwta.encode(sess, X_train)
