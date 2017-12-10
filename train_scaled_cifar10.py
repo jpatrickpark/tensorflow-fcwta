@@ -35,11 +35,11 @@ tf.app.flags.DEFINE_float('sparsity', 0.1,
                           'lifetime sparsity constraint to enforce')
 tf.app.flags.DEFINE_integer('batch_size', 100,
                             'batch size to use during training')
-tf.app.flags.DEFINE_integer('hidden_units', 1500,
+tf.app.flags.DEFINE_integer('hidden_units', 1000,
                             'size of each ReLU (encode) layer')
 tf.app.flags.DEFINE_integer('num_layers', 1,
                             'number of ReLU (encode) layers')
-tf.app.flags.DEFINE_integer('train_steps', 500,
+tf.app.flags.DEFINE_integer('train_steps', 500000,
                             'total minibatches to train')
 tf.app.flags.DEFINE_integer('steps_per_display', 100,
                             'minibatches to train before printing loss')
@@ -129,6 +129,7 @@ def main():
             writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
 
         ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
+        print("checked if saved anything")
         if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
             print('Restoring from %s' % ckpt.model_checkpoint_path)
             fcwta.saver.restore(sess, ckpt.model_checkpoint_path)
